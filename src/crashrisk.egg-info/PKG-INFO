@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: crashrisk
+Version: 0.1.0
+Requires-Python: >=3.10
+Requires-Dist: requests>=2.31
+Requires-Dist: pandas>=2.2
+Requires-Dist: geopandas>=0.14
+Requires-Dist: shapely>=2.0
+Requires-Dist: pyproj>=3.6
+Requires-Dist: pyarrow>=15.0
+Requires-Dist: osmnx>=1.9
+Requires-Dist: networkx>=3.2
+Requires-Dist: tqdm>=4.66
