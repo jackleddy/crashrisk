@@ -46,18 +46,52 @@ TRAFFIC_OUTFIELDS: Sequence[str] = (
     "AAWDT",
 )
 
+# Training table features
+CRASH_CONTEXT_FEATURES: Sequence[str] = (
+    "WEATHER_CONDITION",
+    "LIGHT_CONDITION",
+    "ROADWAY_SURFACE_COND",
+    "ROADWAY_ALIGNMENT",
+    "INTERSECTION_TYPE",
+    "TRAFFIC_CONTROL_TYPE",
+)
+EDGE_TRAIN_FEATURES: Sequence[str] = (
+    "length", 
+    "highway",          # road class
+    "oneway",
+    "lanes",
+    "maxspeed",
+    "ADT",              # from traffic volume 
+    "AAWDT", 
+    "tv_match_dist_m",  # match quality signal
+    "curvature",        # computed
+    "adt_used",         # computed
+)
+NODE_TRAIN_FEATURES: Sequence[str] = (
+    "degree",
+    "x",
+    "y",
+    "adt_sum_incident", # computed
+)
 
 @dataclass(frozen=True)
 class Outputs:
     """Output locations for intermediate and processed data."""
 
     raw_dir: str = "data/raw"
+    interim_dir: str = "data/interim"
     processed_dir: str = "data/processed"
     
-    # Change names 
+    # Change names if location changes
     crashes_file: str = "data/raw/blacksburg_crashes.parquet"
     traffic_file: str = "data/raw/blacksburg_traffic_volume.parquet"
 
     osm_graph_file: str = "data/processed/osm_drive_graph.graphml"
     osm_nodes_file: str = "data/processed/osm_nodes.parquet"
     osm_edges_file: str = "data/processed/osm_edges.parquet"
+
+    edges_with_traffic_file: str = "data/interim/osm_edges_with_traffic.parquet"
+    crashes_snapped_file: str = "data/interim/crashes_snapped.parquet"
+
+    train_edges_file: str = "data/processed/train_edges.parquet"
+    train_nodes_file: str = "data/processed/train_nodes.parquet"
