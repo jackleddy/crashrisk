@@ -95,3 +95,35 @@ class Outputs:
 
     train_edges_file: str = "data/processed/train_edges.parquet"
     train_nodes_file: str = "data/processed/train_nodes.parquet"
+
+    # GNN
+    gnn_model_file: str = "data/processed/gnn_graphsage_edge_poisson.pt"
+    gnn_edge_predictions_file: str = "data/processed/gnn_edge_predictions.parquet"
+
+    # Map output
+    risk_map_html_file: str = "data/processed/risk_map.html"
+
+
+# GNN CONFIG
+
+HIGHWAY_CATEGORIES = [
+    "motorway", "trunk", "primary", "secondary", "tertiary",
+    "residential", "service", "unclassified", "living_street",
+]
+
+EDGE_NUMERIC_FEATURES = [
+    "curvature",   # >=1.0
+    "lanes_num",
+    "maxspeed_num",
+    "oneway_num",
+]
+
+CURVATURE_MAX_CLIP: float = 20.0
+EXPOSURE_MIN_CLIP: float = 1e-6
+EXPOSURE_MAX_CLIP: float = 1e8
+
+NODE_NUMERIC_FEATURES = [
+    "in_deg",
+    "out_deg",
+    "deg",
+]

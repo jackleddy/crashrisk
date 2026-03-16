@@ -11,3 +11,7 @@ Requires-Dist: pyarrow>=15.0
 Requires-Dist: osmnx>=1.9
 Requires-Dist: networkx>=3.2
 Requires-Dist: tqdm>=4.66
+Requires-Dist: folium>=0.16
+Requires-Dist: branca>=0.7
+Requires-Dist: torch>=2.2
+Requires-Dist: torch-geometric>=2.5

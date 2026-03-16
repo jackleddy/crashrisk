@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import LineString
 
+from crashrisk.config import CURVATURE_MAX_CLIP, EXPOSURE_MAX_CLIP, EXPOSURE_MIN_CLIP
+
 # Helpers
 
 def _pick_node_id_col(nodes: pd.DataFrame) -> str:
@@ -57,7 +59,8 @@ def compute_curvature(lines: LineString, length_m: Optional[float]) -> float:
     L = float(length_m) if length_m is not None else float(lines.length)
     eps = 1e-6
 
-    return float(L / max(chord, eps)) # path length / straight endpoint distance
+    curvature = float(L / max(chord, eps))
+    return float(min(curvature, CURVATURE_MAX_CLIP)) # path length / straight endpoint distance
 
 
 # Aggregate 
@@ -100,7 +103,7 @@ def compute_edge_exposure(edges: pd.DataFrame, adt_used: pd.Series) -> pd.Series
         raise ValueError("Edges must have 'length' column (meters).")
     length = edges["length"].map(_to_numeric_safe).fillna(edges["length"]).astype(float)
     exp = adt_used.astype(float) * length
-    exp = exp.where(exp > 0, 1e-6)
+    exp = exp.clip(lower=EXPOSURE_MIN_CLIP, upper=EXPOSURE_MAX_CLIP)
     return exp
 
 

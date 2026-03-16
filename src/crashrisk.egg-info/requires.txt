@@ -7,3 +7,7 @@ pyarrow>=15.0
 osmnx>=1.9
 networkx>=3.2
 tqdm>=4.66
+folium>=0.16
+branca>=0.7
+torch>=2.2
+torch-geometric>=2.5
