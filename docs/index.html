@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Risk Map Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="min-h-screen bg-slate-100">
+  <div class="min-h-screen flex flex-col">
+    <header class="bg-white border-b border-slate-200 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-4">
+        <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">
+          Risk Map Visualization
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">
+          ArcGIS visualization of project results
+        </p>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full p-4">
+      <div class="h-[calc(100vh-120px)] min-h-[600px] bg-white rounded-2xl shadow overflow-hidden border border-slate-200">
+        <iframe
+          src="results/risk_map.html"
+          title="Risk Map"
+          class="w-full h-full border-0"
+          loading="lazy"
+        ></iframe>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
