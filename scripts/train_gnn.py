@@ -95,29 +95,29 @@ def main():
 
         # print("Saved best model to:", best_path)
 
-        model.load_state_dict(torch.load(best_path, map_location=device))
-        model.eval()
-        with torch.no_grad():
-            log_mu = model(
-                batch.data.x, batch.data.edge_index,
-                batch.edge_u, batch.edge_v,
-                batch.edge_attr, batch.log_exposure
-            )
-            mu = torch.exp(log_mu).detach().cpu().numpy()
-            y = batch.y.detach().cpu().numpy()
-            exposure = np.exp(batch.log_exposure.detach().cpu().numpy())
-            rate = mu / exposure
+    model.load_state_dict(torch.load(best_path, map_location=device))
+    model.eval()
+    with torch.no_grad():
+        log_mu = model(
+            batch.data.x, batch.data.edge_index,
+            batch.edge_u, batch.edge_v,
+            batch.edge_attr, batch.log_exposure
+        )
+        mu = torch.exp(log_mu).detach().cpu().numpy()
+        y = batch.y.detach().cpu().numpy()
+        exposure = np.exp(batch.log_exposure.detach().cpu().numpy())
+        rate = mu / exposure
 
-        pred = pd.DataFrame({
-            "edge_id": batch.edge_ids,
-            "y": y.astype(int),
-            "mu_pred": mu,
-            "exposure": exposure,
-            "rate_pred": rate,
-        })
-        pred_path = out.gnn_edge_predictions_file
-        pred.to_parquet(pred_path, index=False)
-        # print("Wrote:", pred_path)
+    pred = pd.DataFrame({
+        "edge_id": batch.edge_ids,
+        "y": y.astype(int),
+        "mu_pred": mu,
+        "exposure": exposure,
+        "rate_pred": rate,
+    })
+    pred_path = out.gnn_edge_predictions_file
+    pred.to_parquet(pred_path, index=False)
+    # print("Wrote:", pred_path)
 
 if __name__ == "__main__":
     main()
