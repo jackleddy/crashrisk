@@ -89,9 +89,9 @@ def main():
                 f"test loss {te['loss']:.4f} mae {te['mae_count']:.3f}"
             )
 
-        if va["loss"] < best_val:
-            best_val = va["loss"]
-            torch.save(model.state_dict(), best_path)
+    if va["loss"] < best_val:
+        best_val = va["loss"]
+        torch.save(model.state_dict(), best_path)
 
 
     model.load_state_dict(torch.load(best_path, map_location=device))
