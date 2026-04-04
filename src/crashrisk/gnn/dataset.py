@@ -9,6 +9,7 @@ from torch_geometric.data import Data
 
 from crashrisk.config import (
     CURVATURE_MAX_CLIP,
+    EDGE_CATEGORICAL_FEATURES,
     EDGE_NUMERIC_FEATURES,
     EXPOSURE_MAX_CLIP,
     EXPOSURE_MIN_CLIP,
@@ -44,24 +45,6 @@ def _to_float(x):
         return float(num) if num else np.nan
     except Exception:
         return np.nan
-
-
-def _norm_highway(val) -> str:
-    if isinstance(val, list) and val:
-        val = val[0]
-    if val is None:
-        return "other"
-    s = str(val).strip().lower()
-    return s if s in HIGHWAY_CATEGORIES else "other"
-
-
-def _onehot_highway(series: pd.Series) -> np.ndarray:
-    cats = HIGHWAY_CATEGORIES + ["other"]
-    idx = {c: i for i, c in enumerate(cats)}
-    out = np.zeros((len(series), len(cats)), dtype=np.float32)
-    for r, v in enumerate(series):
-        out[r, idx[_norm_highway(v)]] = 1.0
-    return out
 
 
 def _standardize(mat: np.ndarray, eps: float = 1e-6) -> np.ndarray:
@@ -165,7 +148,7 @@ def build_edge_dataset(
     if "edge_id" not in train_edges.columns:
         raise ValueError("train_edges.parquet must contain edge_id.")
 
-    label_cols = ["edge_id", "y", "exposure"]
+    label_cols = ["edge_id", "y", "exposure", *EDGE_CATEGORICAL_FEATURES]
     if "curvature" in train_edges.columns:
         label_cols.append("curvature")
 
@@ -206,9 +189,13 @@ def build_edge_dataset(
     X_edge_num = np.stack([merged[c].map(_to_float).to_numpy() for c in EDGE_NUMERIC_FEATURES], axis=1).astype(np.float32)
     X_edge_num = _standardize(X_edge_num).astype(np.float32)
 
-    hw = _onehot_highway(merged.get("highway", pd.Series(["other"] * len(merged))))
+    categorical_cols = []
+    for col in EDGE_CATEGORICAL_FEATURES:
+        if col in merged.columns:
+            col_ohe = pd.get_dummies(merged[col].fillna("missing").astype(str), prefix=col)
+            categorical_cols.append(col_ohe)
 
-    X_edge = np.concatenate([X_edge_num, hw], axis=1).astype(np.float32)
+    X_edge = np.concatenate([X_edge_num, *categorical_cols], axis=1).astype(np.float32)
     edge_attr_t = torch.tensor(X_edge, dtype=torch.float, device=device)
 
     edge_u_t = torch.tensor(u_idx, dtype=torch.long, device=device)

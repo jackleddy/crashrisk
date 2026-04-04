@@ -115,7 +115,12 @@ EDGE_NUMERIC_FEATURES = [
     "curvature",   # >=1.0
     "lanes_num",
     "maxspeed_num",
-    "oneway_num",
+    "oneway_num"
+]
+
+EDGE_CATEGORICAL_FEATURES = [
+    "highway",
+    "INTERSECTION_TYPE_mode",
 ]
 
 CURVATURE_MAX_CLIP: float = 20.0
