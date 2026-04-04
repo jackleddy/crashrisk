@@ -54,7 +54,7 @@ def main():
 
     # Put these params in src config file
     model = GraphSAGE(node_in=node_in, hidden=128, edge_in=edge_in, dropout=0.2).to(device)
-
+    
     loss_fn = nn.PoissonNLLLoss(log_input=True, full=False, reduction="mean")
 
     opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
@@ -63,7 +63,7 @@ def main():
     best_path = out.gnn_model_file
     os.makedirs(os.path.dirname(best_path), exist_ok=True)
 
-    for epoch in range(1, 1001):
+    for epoch in range(1, 751):
         model.train()
         opt.zero_grad()
 
@@ -89,35 +89,34 @@ def main():
                 f"test loss {te['loss']:.4f} mae {te['mae_count']:.3f}"
             )
 
-            if va["loss"] < best_val:
-                best_val = va["loss"]
-                torch.save(model.state_dict(), best_path)
+        if va["loss"] < best_val:
+            best_val = va["loss"]
+            torch.save(model.state_dict(), best_path)
 
-        # print("Saved best model to:", best_path)
 
-        model.load_state_dict(torch.load(best_path, map_location=device))
-        model.eval()
-        with torch.no_grad():
-            log_mu = model(
-                batch.data.x, batch.data.edge_index,
-                batch.edge_u, batch.edge_v,
-                batch.edge_attr, batch.log_exposure
-            )
-            mu = torch.exp(log_mu).detach().cpu().numpy()
-            y = batch.y.detach().cpu().numpy()
-            exposure = np.exp(batch.log_exposure.detach().cpu().numpy())
-            rate = mu / exposure
+    model.load_state_dict(torch.load(best_path, map_location=device))
+    model.eval()
+    with torch.no_grad():
+        log_mu = model(
+            batch.data.x, batch.data.edge_index,
+            batch.edge_u, batch.edge_v,
+            batch.edge_attr, batch.log_exposure
+        )
+        mu = torch.exp(log_mu).detach().cpu().numpy()
+        y = batch.y.detach().cpu().numpy()
+        exposure = np.exp(batch.log_exposure.detach().cpu().numpy())
+        rate = mu / exposure
 
-        pred = pd.DataFrame({
-            "edge_id": batch.edge_ids,
-            "y": y.astype(int),
-            "mu_pred": mu,
-            "exposure": exposure,
-            "rate_pred": rate,
-        })
-        pred_path = out.gnn_edge_predictions_file
-        pred.to_parquet(pred_path, index=False)
-        # print("Wrote:", pred_path)
+    pred = pd.DataFrame({
+        "edge_id": batch.edge_ids,
+        "y": y.astype(int),
+        "mu_pred": mu,
+        "exposure": exposure,
+        "rate_pred": rate,
+    })
+    pred_path = out.gnn_edge_predictions_file
+    pred.to_parquet(pred_path, index=False)
+    # print("Wrote:", pred_path)
 
 if __name__ == "__main__":
     main()
