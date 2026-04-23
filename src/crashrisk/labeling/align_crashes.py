@@ -45,15 +45,29 @@ def snap_crashes_to_network(
         + edges["key"].map(int).astype(str)
     )
 
+    crashes_work = crashes.copy().reset_index(drop=False).rename(columns={"index": "__crash_row_id"})
+    if "DOCUMENT_NBR" in crashes_work.columns:
+        crashes_work["__crash_uid"] = crashes_work["DOCUMENT_NBR"].astype(str)
+        missing_uid = crashes_work["DOCUMENT_NBR"].isna()
+        crashes_work.loc[missing_uid, "__crash_uid"] = (
+            "__row_" + crashes_work.loc[missing_uid, "__crash_row_id"].astype(str)
+        )
+    else:
+        crashes_work["__crash_uid"] = "__row_" + crashes_work["__crash_row_id"].astype(str)
+
     # Nearest edge for all crashes
     edge_keep = ["edge_id"]
     crashes_edge = nearest_join(
-        crashes,
+        crashes_work,
         edges[edge_keep + ["geometry"]],
         right_keep_cols=edge_keep,
         max_distance_m=cfg.edge_max_distance_m,
         distance_col="edge_snap_dist_m",
     )
+    # sjoin_nearest can return multiple ties for the same left row.
+    # Keep one nearest edge per crash uid to avoid label inflation.
+    crashes_edge = crashes_edge.sort_values("edge_snap_dist_m")
+    crashes_edge = crashes_edge.drop_duplicates(subset=["__crash_uid"], keep="first")
     crashes_edge = crashes_edge.reset_index(drop=True)
     if "RELATION_TO_ROADWAY" in crashes_edge.columns:
         crashes_edge["intersection_flag"] = crashes_edge["RELATION_TO_ROADWAY"].apply(
@@ -98,5 +112,6 @@ def snap_crashes_to_network(
     assigned[(~crashes_both["intersection_flag"]) & has_edge] = "edge"
 
     crashes_both["assigned_to"] = assigned
+    crashes_both = crashes_both.drop(columns=["__crash_row_id", "__crash_uid"], errors="ignore")
 
     return crashes_both
