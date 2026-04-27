@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 
-REGION_NAME: str = "Blacksburg, Virginia, USA"
+REGION_NAME: str = "Richmond, Virginia, USA"
 REGION_BUFFER: float = 300.0
 CRASH_YEAR_MIN: int = 2018
 CRASH_YEAR_MAX: int = 2026
@@ -83,8 +83,8 @@ class Outputs:
     processed_dir: str = "data/processed"
     
     # Change names if location changes
-    crashes_file: str = "data/raw/blacksburg_crashes.parquet"
-    traffic_file: str = "data/raw/blacksburg_traffic_volume.parquet"
+    crashes_file: str = "data/raw/richmond_crashes.parquet"
+    traffic_file: str = "data/raw/richmond_traffic_volume.parquet"
 
     osm_graph_file: str = "data/processed/osm_drive_graph.graphml"
     osm_nodes_file: str = "data/processed/osm_nodes.parquet"

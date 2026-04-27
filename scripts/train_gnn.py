@@ -63,7 +63,7 @@ def main():
     best_path = out.gnn_model_file
     os.makedirs(os.path.dirname(best_path), exist_ok=True)
 
-    for epoch in range(1, 751):
+    for epoch in range(1, 31):
         model.train()
         opt.zero_grad()
 
@@ -77,7 +77,7 @@ def main():
         loss.backward()
         opt.step()
 
-        if epoch % 100 == 0 or epoch == 1:
+        if epoch % 1 == 0 or epoch == 1:
             tr = eval_split(model, batch, batch.train_idx, loss_fn)
             va = eval_split(model, batch, batch.val_idx, loss_fn)
             te = eval_split(model, batch, batch.test_idx, loss_fn)

@@ -1,6 +1,7 @@
 # This file was mostly written by chat bc I couldn't be bothered. We may have to rewrite it eventually
 # but it works so ... fine for now?
 import json
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
@@ -11,6 +12,9 @@ from requests.adapters import HTTPAdapter
 from shapely.geometry import mapping
 from tqdm import tqdm
 from urllib3.util.retry import Retry
+
+OUTER_RETRY_ATTEMPTS = 3
+OUTER_RETRY_BACKOFF_S = 1.0
 
 
 @dataclass(frozen=True)
@@ -38,14 +42,33 @@ class ArcGISLayer:
         session.headers.update({"User-Agent": "crashrisk/0.1"})
         return session
 
+    def _post_json(
+        self,
+        data: Dict[str, Any],
+        timeout_s: int = 120,
+        operation: str = "request",
+    ) -> Dict[str, Any]:
+        last_exc: requests.RequestException | None = None
+
+        for attempt in range(1, OUTER_RETRY_ATTEMPTS + 1):
+            try:
+                with self._build_session() as session:
+                    response = session.post(self.query_url, data=data, timeout=timeout_s)
+                    response.raise_for_status()
+                    return response.json()
+            except requests.RequestException as exc:
+                last_exc = exc
+                if attempt == OUTER_RETRY_ATTEMPTS:
+                    break
+                time.sleep(OUTER_RETRY_BACKOFF_S * attempt)
+
+        raise RuntimeError(
+            f"ArcGIS {operation} failed for {self.query_url} after "
+            f"{OUTER_RETRY_ATTEMPTS} attempts: {last_exc}"
+        ) from last_exc
+
     def _post(self, data: Dict[str, Any], timeout_s: int = 120) -> Dict[str, Any]:
-        try:
-            with self._build_session() as session:
-                response = session.post(self.query_url, data=data, timeout=timeout_s)
-                response.raise_for_status()
-                return response.json()
-        except requests.RequestException as exc:
-            raise RuntimeError(f"ArcGIS request failed for {self.query_url}: {exc}") from exc
+        return self._post_json(data=data, timeout_s=timeout_s, operation="_post")
 
     def count(self, where: str, geometry_esrijson: str, geometry_type: str) -> int:
         payload = {
@@ -75,61 +98,53 @@ class ArcGISLayer:
     ) -> gpd.GeoDataFrame:
         fields = ",".join(out_fields)
         result_offset = 0
-        session = self._build_session()
+        total = self.count(
+            where=where,
+            geometry_esrijson=geometry_esrijson,
+            geometry_type=geometry_type,
+        )
+        frames: List[gpd.GeoDataFrame] = []
 
-        try:
-            total = self.count(
-                where=where,
-                geometry_esrijson=geometry_esrijson,
-                geometry_type=geometry_type,
+        it = range(0, total, page_size)
+        if show_progress:
+            it = tqdm(it, desc="Downloading", unit="page")
+
+        for _ in it:
+            payload = {
+                "f": "geojson",
+                "where": where,
+                "outFields": fields,
+                "returnGeometry": "true",
+                "geometry": geometry_esrijson,
+                "geometryType": geometry_type,
+                "spatialRel": "esriSpatialRelIntersects",
+                "inSR": str(out_sr),
+                "outSR": str(out_sr),
+                "resultOffset": str(result_offset),
+                "resultRecordCount": str(page_size),
+                "geometryPrecision": str(geometry_precision),
+                "returnZ": "false",
+                "returnM": "false",
+            }
+            gj = self._post_json(
+                data=payload,
+                timeout_s=180,
+                operation=f"page fetch at offset {result_offset}",
             )
-            frames: List[gpd.GeoDataFrame] = []
 
-            it = range(0, total, page_size)
-            if show_progress:
-                it = tqdm(it, desc="Downloading", unit="page")
+            feats = gj.get("features", [])
+            if not feats:
+                break
 
-            for _ in it:
-                payload = {
-                    "f": "geojson",
-                    "where": where,
-                    "outFields": fields,
-                    "returnGeometry": "true",
-                    "geometry": geometry_esrijson,
-                    "geometryType": geometry_type,
-                    "spatialRel": "esriSpatialRelIntersects",
-                    "inSR": str(out_sr),
-                    "outSR": str(out_sr),
-                    "resultOffset": str(result_offset),
-                    "resultRecordCount": str(page_size),
-                    "geometryPrecision": str(geometry_precision),
-                    "returnZ": "false",
-                    "returnM": "false",
-                }
-                try:
-                    response = session.post(self.query_url, data=payload, timeout=180)
-                    response.raise_for_status()
-                    gj = response.json()
-                except requests.RequestException as exc:
-                    raise RuntimeError(
-                        f"ArcGIS page fetch failed at offset {result_offset} for {self.query_url}: {exc}"
-                    ) from exc
+            gdf = gpd.GeoDataFrame.from_features(feats, crs=f"EPSG:{out_sr}")
+            frames.append(gdf)
+            result_offset += page_size
 
-                feats = gj.get("features", [])
-                if not feats:
-                    break
+        if not frames:
+            return gpd.GeoDataFrame(geometry=[], crs=f"EPSG:{out_sr}")
 
-                gdf = gpd.GeoDataFrame.from_features(feats, crs=f"EPSG:{out_sr}")
-                frames.append(gdf)
-                result_offset += page_size
-
-            if not frames:
-                return gpd.GeoDataFrame(geometry=[], crs=f"EPSG:{out_sr}")
-
-            out = pd.concat(frames, ignore_index=True)
-            return gpd.GeoDataFrame(out, geometry="geometry", crs=f"EPSG:{out_sr}")
-        finally:
-            session.close()
+        out = pd.concat(frames, ignore_index=True)
+        return gpd.GeoDataFrame(out, geometry="geometry", crs=f"EPSG:{out_sr}")
 
 
 def shapely_polygon_to_esri_polygon_json(poly) -> str:
