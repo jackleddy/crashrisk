@@ -81,6 +81,7 @@ class Outputs:
     raw_dir: str = "data/raw"
     interim_dir: str = "data/interim"
     processed_dir: str = "data/processed"
+    evaluation_dir: str = "data/evaluation"
     
     # Change names if location changes
     crashes_file: str = "data/raw/richmond_crashes.parquet"
