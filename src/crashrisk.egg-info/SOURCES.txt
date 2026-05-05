@@ -14,4 +14,3 @@ src/crashrisk/labeling/align_crashes.py
 src/crashrisk/labeling/align_traffic_volume.py
 src/crashrisk/labeling/build_training_tables.py
 src/crashrisk/labeling/spatial_match.py
-src/crashrisk/visualization/risk_map.py

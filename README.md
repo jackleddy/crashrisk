@@ -10,7 +10,7 @@ pip install -U pip
 pip install -e .
 
 ### Scripts
-for now, gotta run ```pip install -e . ``` before each script when edited
+Run `pip install -e .` once after setup. Re-run it only after dependency or package metadata changes.
 
 ## Build OSM road graph
 python scripts/build_network.py

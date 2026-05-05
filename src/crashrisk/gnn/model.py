@@ -11,6 +11,9 @@ class GraphSAGE(nn.Module):
         super().__init__()
         self.conv1 = SAGEConv(node_in, hidden)
         self.conv2 = SAGEConv(hidden, hidden)
+        self.conv3 = SAGEConv(hidden, hidden)
+        self.conv4 = SAGEConv(hidden, hidden)
+        self.conv5 = SAGEConv(hidden, hidden)
         self.dropout = dropout
 
         self.edge_mlp = nn.Sequential(
@@ -26,6 +29,18 @@ class GraphSAGE(nn.Module):
         h = F.dropout(h, p=self.dropout, training=self.training)
 
         h = self.conv2(h, edge_index)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        h = self.conv3(h, edge_index)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        h = self.conv4(h, edge_index)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        h = self.conv5(h, edge_index)
         h = F.relu(h)
         return h
     
